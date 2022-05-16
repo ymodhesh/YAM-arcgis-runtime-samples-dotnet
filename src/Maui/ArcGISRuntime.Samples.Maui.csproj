@@ -85,6 +85,28 @@
 	  <None Remove="Samples\Map\DisplayOverviewMap\**" />
 	</ItemGroup>
 
+    <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+        <Content Include="Resources\*.md">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Resources\*.css">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+    <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+        <AndroidAsset Include="Assets\github-markdown.css" />
+    </ItemGroup>
+    <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+        <BundleResource Include="Resources\github-markdown.css" />
+    </ItemGroup>
+    <ItemGroup>
+      <None Remove="Resources\SettingsPage\*.md" />
+      <EmbeddedResource Include="Resources\SettingsPage\*.md" />
+      <Content Include="Samples\**\*.md" Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) != 'android'" />
+      <AndroidAsset Include="Samples\**\*.md" Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'" />
+    </ItemGroup>
+
+
     <ItemGroup>
         <PackageReference Include="Esri.ArcGISRuntime" Version="100.14.0" />
         <PackageReference Include="Esri.ArcGISRuntime.Hydrography" Version="100.14.0" />
