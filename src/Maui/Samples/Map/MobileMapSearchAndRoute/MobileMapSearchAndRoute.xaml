@@ -38,7 +38,7 @@
                                     <Image Grid.Column="0"
                                            Source="{Binding Item, Converter={StaticResource ItemToImageSourceConverter}}" />
                                     <Image Grid.Column="1"
-                                           Source="{resources:ImageResource ArcGISRuntime.Resources.routingSymbol.png}"
+                                           Source="{resources:ImageResource ArcGISRuntimeMaui.Resources.routingSymbol.png}"
                                            HeightRequest="25" WidthRequest="25"
                                            Margin="5"
                                            IsVisible="{Binding TransportationNetworks,Converter={StaticResource NullToVisibilityConverter}}" />
