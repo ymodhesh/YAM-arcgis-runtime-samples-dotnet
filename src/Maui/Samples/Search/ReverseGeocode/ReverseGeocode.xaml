@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:esriUI="clr-namespace:Esri.ArcGISRuntime.Maui;assembly=Esri.ArcGISRuntime.Maui"
+             xmlns:resources="clr-namespace:ArcGISRuntimeMaui.Resources"
+             x:Class="ArcGISRuntimeMaui.Samples.ReverseGeocode.ReverseGeocode"
+             xmlns:cmp="clr-namespace:Microsoft.Maui.Controls.Compatibility;assembly=Microsoft.Maui.Controls">
+    <cmp:RelativeLayout>
+        <esriUI:MapView x:Name="MyMapView" Style="{StaticResource MapWithFormStyle}"
+                        BindingContext="{x:Reference Name=ResponsiveFormContainer}" />
+        <resources:ResponsiveFormContainer x:Name="ResponsiveFormContainer">
+            <StackLayout>
+                <Label Text="Tap to find the nearest address."
+                       HorizontalTextAlignment="Center" />
+            </StackLayout>
+        </resources:ResponsiveFormContainer>
+    </cmp:RelativeLayout>
+</ContentPage>

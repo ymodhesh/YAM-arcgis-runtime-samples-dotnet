@@ -80,7 +80,7 @@ namespace ArcGISRuntime.Samples.Managers
             SearchableTreeNode featured = new SearchableTreeNode("Featured", AllSamples.Where(sample => featuredSamples.Contains(sample.FormalName, StringComparer.OrdinalIgnoreCase)).OrderBy(sample => sample.SampleName));
             FullTree.Items.Insert(0, featured);
 
-#if !(__IOS__ || XAMARIN || WinUI || __ANDROID__ || WINDOWS_UWP)
+#if !(__IOS__ || XAMARIN || WinUI || __ANDROID__ || WINDOWS_UWP || MAUI)
             // Get favorite samples if they exist. This feature is only available on WPF. 
             AddFavoritesCategory();
 #endif
@@ -102,6 +102,8 @@ namespace ArcGISRuntime.Samples.Managers
 
 #if WinUI
             resourceStreamName = "ArcGISRuntime.WinUI.Viewer.Resources.FeaturedSamples.xml";
+#elif MAUI
+            resourceStreamName = "ArcGISRuntimeMaui.Resources.FeaturedSamples.xml";
 #else
             resourceStreamName = "ArcGISRuntime.Resources.FeaturedSamples.xml";
 #endif
@@ -208,7 +210,7 @@ namespace ArcGISRuntime.Samples.Managers
                    sample.Tags.Any(tag => tag.Contains(searchText));
         }
 
-#if !(__IOS__ || XAMARIN || WinUI || __ANDROID__ || WINDOWS_UWP)
+#if !(__IOS__ || XAMARIN || WinUI || __ANDROID__ || WINDOWS_UWP || MAUI)
         private static List<string> GetFavoriteSampleNames()
         {
             // Get the names of the favorite samples from the saved file if it exists.

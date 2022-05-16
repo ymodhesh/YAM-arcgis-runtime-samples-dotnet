@@ -1,0 +1,49 @@
+﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"             
+             xmlns:esriUI="clr-namespace:Esri.ArcGISRuntime.Maui;assembly=Esri.ArcGISRuntime.Maui"
+             xmlns:resources="clr-namespace:ArcGISRuntimeMaui.Resources"
+             x:Class="ArcGISRuntimeMaui.Samples.PlayKmlTours.PlayKmlTours"
+             xmlns:cmp="clr-namespace:Microsoft.Maui.Controls.Compatibility;assembly=Microsoft.Maui.Controls">
+    <cmp:RelativeLayout>
+        <esriUI:SceneView x:Name="MySceneView" Style="{StaticResource SceneWithFormStyle}"
+                        BindingContext="{x:Reference Name=ResponsiveFormContainer}" />
+        <resources:ResponsiveFormContainer x:Name="ResponsiveFormContainer">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Label Text="Use the buttons to control the tour. Contains audio. 🎧"
+                           Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+                           Margin="0,0,0,5"
+                           />
+                <Button x:Name="PlayButton"
+                        Grid.Row="1" Grid.Column="0"
+                        Text="Play"
+                        IsEnabled="False"
+                        Clicked="Play_Clicked" />
+                <Button x:Name="PauseButton"
+                        Grid.Row="1" Grid.Column="1"
+                        Margin="5,0,5,0"
+                        Text="Pause"
+                        IsEnabled="False"
+                        Clicked="Pause_Clicked" />
+                <Button x:Name="ResetButton"
+                        Grid.Row="1" Grid.Column="2"
+                        Text="Reset"
+                        IsEnabled="False"
+                        Clicked="Reset_Clicked" />
+                <ActivityIndicator x:Name="LoadingStatusBar"
+                                   Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+                                   Margin="0,5,0,0"
+                                   IsEnabled="True" IsRunning="True"  />
+            </Grid>
+        </resources:ResponsiveFormContainer>
+    </cmp:RelativeLayout>
+</ContentPage>
