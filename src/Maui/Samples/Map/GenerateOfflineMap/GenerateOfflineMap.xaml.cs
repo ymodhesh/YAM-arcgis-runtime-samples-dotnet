@@ -20,10 +20,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-#if __ANDROID__
-using Application = Xamarin.Forms.Application;
-#endif
-
 namespace ArcGISRuntime.Samples.GenerateOfflineMap
 {
     [ArcGISRuntime.Samples.Shared.Attributes.Sample(

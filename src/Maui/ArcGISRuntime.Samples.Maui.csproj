@@ -94,7 +94,7 @@
         </Content>
     </ItemGroup>
     <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
-        <AndroidAsset Include="Assets\github-markdown.css" />
+        <AndroidAsset Include="Resources\github-markdown.css" />
     </ItemGroup>
     <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
         <BundleResource Include="Resources\github-markdown.css" />
