@@ -329,19 +329,22 @@ def delete_sample_folder(platforms, root, category, sample_name):
 def move_sample_csproj(platforms, root, old_cat, new_cat, old_name, new_name):
     for platform in platforms:
         csproj = get_proj_file(platform, root)
-        with open(csproj, 'r+') as fd:
+        with open(csproj, 'r') as fd:
             contents = fd.readlines()
             new_contents = []
             for line in contents:
                 if old_name in line:
                     # only replace category once to avoid affecting the name of the sample
                     newline = line.replace(old_name, new_name).replace(old_cat, new_cat, 1)
-                    new_contents.append(newline.rstrip())
+                    new_contents.append(newline.rstrip()+'\n')
                 else:
-                    new_contents.append(line.rstrip())
-            # rewrite file
-            fd.seek(0)
-            fd.write('\n'.join(new_contents))
+                    new_contents.append(line.rstrip()+'\n')
+            fd.close()
+        # rewrite file
+        with open(csproj, 'w') as filewrite:
+            filewrite.seek(0)
+            filewrite.write(''.join(new_contents))
+            filewrite.close()
     return
 
 def rename_sample_main(full_directory):
