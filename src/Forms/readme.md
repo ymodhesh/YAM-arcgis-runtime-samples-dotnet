@@ -229,6 +229,7 @@
 * [Find place](Shared/Samples/Search/FindPlace) - Find places of interest near a location or within a specific area.
 * [Offline geocode](Shared/Samples/Search/OfflineGeocode) - Geocode addresses to locations and reverse geocode locations to addresses offline.
 * [Reverse geocode](Shared/Samples/Search/ReverseGeocode) - Use an online service to find the address for a tapped point.
+* [Search with geocode](Shared/Samples/Search/SearchWithGeocode) - Find the location for an address, or places of interest near a location or within a specific area.
 
 ## Security
 

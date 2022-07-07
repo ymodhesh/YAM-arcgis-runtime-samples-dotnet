@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Screenshots -->
+    <None Include="$(MSBuildThisFileDirectory)Samples\Search\SearchWithGeocode\SearchWithGeocode.jpg" />
     <None Include="$(MSBuildThisFileDirectory)Samples\Data\CreateMobileGeodatabase\CreateMobileGeodatabase.jpg" />
     <None Include="$(MSBuildThisFileDirectory)Samples\Data\QueryFeaturesWithArcadeExpression\QueryFeaturesWithArcadeExpression.jpg" />
     <None Include="$(MSBuildThisFileDirectory)Samples\Layers\ExportVectorTiles\ExportVectorTiles.jpg" />
@@ -216,6 +217,10 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Sample Code -->
+    <Compile Include="$(MSBuildThisFileDirectory)Samples\Search\SearchWithGeocode\SearchWithGeocode.xaml.cs">
+      <DependentUpon>SearchWithGeocode.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Samples\Data\CreateMobileGeodatabase\CreateMobileGeodatabase.xaml.cs">
       <DependentUpon>CreateMobileGeodatabase.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -950,6 +955,9 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Sample XAML -->
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Samples\Search\SearchWithGeocode\SearchWithGeocode.xaml">
+      <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
+    </EmbeddedResource>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)Samples\Data\CreateMobileGeodatabase\CreateMobileGeodatabase.xaml">
       <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
     </EmbeddedResource>

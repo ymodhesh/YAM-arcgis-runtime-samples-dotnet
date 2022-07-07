@@ -1,0 +1,40 @@
+{
+    "category": "Search",
+    "description": "Find the location for an address, or places of interest near a location or within a specific area.",
+    "formal_name": "SearchWithGeocode",
+    "ignore": false,
+    "images": [
+        "SearchWithGeocode.jpg"
+    ],
+    "keywords": [
+        "POI",
+        "address",
+        "businesses",
+        "geocode",
+        "locations",
+        "locator",
+        "places of interest",
+        "point of interest",
+        "search",
+        "suggestions",
+        "toolkit"
+    ],
+    "offline_data": [],
+    "redirect_from": [
+        "/net/latest/forms/sample-code/searchwithgeocode.htm"
+    ],
+    "relevant_apis": [
+        "ArcGISToolkit.LocatorSearchSource",
+        "ArcGISToolkit.SearchView",
+        "GeocodeParameters",
+        "LocatorTask",
+        "SearchResult",
+        "SearchSuggestion",
+        "SuggestParameters"
+    ],
+    "snippets": [
+        "SearchWithGeocode.xaml",
+        "SearchWithGeocode.xaml.cs"
+    ],
+    "title": "Search with geocode"
+}
