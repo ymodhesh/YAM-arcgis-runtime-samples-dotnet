@@ -23,6 +23,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using Esri.ArcGISRuntime.Location;
+using Esri.ArcGISRuntime.Toolkit.UI.Controls;
+using Esri.ArcGISRuntime.Tasks.Geocoding;
 
 namespace ArcGISRuntime.WPF.Samples.SearchWithGeocode
 {
@@ -35,6 +38,9 @@ namespace ArcGISRuntime.WPF.Samples.SearchWithGeocode
     [ArcGISRuntime.Samples.Shared.Attributes.OfflineData()]
     public partial class SearchWithGeocode
     {
+        // Service Uri to be provided to the LocatorTask (geocoder)
+        private Uri _serviceUri = new Uri("https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer");
+
         public SearchWithGeocode()
         {
             InitializeComponent();
@@ -43,6 +49,67 @@ namespace ArcGISRuntime.WPF.Samples.SearchWithGeocode
 
         private async Task Initialize()
         {
+            MyMapView.Map = new Map(BasemapStyle.ArcGISImagery);
+
+            MyMapView.SetViewpoint(new Viewpoint(34.060088, -117.200897, 1e6));
+
+            var searchResultsOverlay = new GraphicsOverlay();
+
+            MyMapView.GraphicsOverlays.Add(searchResultsOverlay);
+
+            try
+            {
+                LocatorSearchSource locatorSearchSource = await LocatorSearchSource.CreateDefaultSourceAsync();
+                locatorSearchSource.DisplayName = "My Locator";
+                locatorSearchSource.MaximumResults = 10;
+                locatorSearchSource.MaximumSuggestions = 5;
+
+                MySearchView.SearchViewModel.Sources.Add(locatorSearchSource);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString(), "Error");
+            }
+        }
+
+        private void MyMapView_GeoViewTapped(object sender, GeoViewInputEventArgs e)
+        {
+            _ = GeoViewTappedTask(e);
+        }
+
+        private async Task GeoViewTappedTask(GeoViewInputEventArgs e)
+        {
+            try
+            {
+                // Search for the graphics underneath the user's tap.
+                IReadOnlyList<IdentifyGraphicsOverlayResult> results = await MyMapView.IdentifyGraphicsOverlaysAsync(e.Position, 12, false);
+
+                // Return gracefully and dismiss any existing callout if there was no result.
+                if (results.Count < 1 || results.First().Graphics.Count < 1)
+                {
+                    MyMapView.DismissCallout();
+
+                    return;
+                }
+
+                // Get the first tapped graphic from the graphics overlay result.
+                Graphic graphic = results[0].Graphics[0];
+
+                // Use the address of the user tapped location graphic.
+                // To get the fully geocoded address use "Place_addr".
+                string calloutAddress = graphic.Attributes["Place_addr"].ToString() != string.Empty ? graphic.Attributes["Place_addr"].ToString() : "Unknown Address";
+                string calloutPlaceName = graphic.Attributes["PlaceName"].ToString() != string.Empty ? graphic.Attributes["PlaceName"].ToString() : "Unknown Place Name";
+
+                // Define the callout title and detail.
+                CalloutDefinition calloutBody = new CalloutDefinition(calloutPlaceName, calloutAddress);
+
+                // Show the callout on the map at the tapped location
+                MyMapView.ShowCalloutAt(e.Location, calloutBody);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString(), "Error");
+            }
         }
     }
 }
