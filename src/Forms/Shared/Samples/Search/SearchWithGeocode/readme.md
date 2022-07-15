@@ -32,6 +32,8 @@ Choose an address from the suggestions or submit your own address to show its lo
 
 This sample uses the World Geocoding Service. For more information, see [Geocoding service](https://developers.arcgis.com/documentation/mapping-apis-and-services/search/services/geocoding-service/) from ArcGIS Developer website.
 
+An additional offline dataset is included to demonstrate how to add an offline search source, see [San Diego Offline Locator](https://www.arcgis.com/home/item.html?id=344e3b12368543ef84045ef9aa3c32ba).
+
 ## Tags
 
 address, businesses, geocode, locations, locator, places of interest, POI, point of interest, search, suggestions, toolkit
