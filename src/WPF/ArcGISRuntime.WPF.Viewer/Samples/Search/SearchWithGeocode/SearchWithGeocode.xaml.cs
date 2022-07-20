@@ -5,7 +5,7 @@
 //
 // Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an
 // "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific
-// language governing permissions and limitations under the License.
+// language governing permissions and limitations under the Licenase.
 
 using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Geometry;
@@ -38,10 +38,10 @@ namespace ArcGISRuntime.WPF.Samples.SearchWithGeocode
         description: "Find the location for an address, or places of interest near a location or within a specific area.",
         instructions: "Choose an address from the suggestions or submit your own address to show its location on the map in a callout. Tap on a result pin to display its address. If you pan away from the result area, a \"Repeat Search Here\" button will appear. Tap it to query again for the currently viewed area on the map.",
         tags: new[] { "POI", "address", "businesses", "geocode", "locations", "locator", "places of interest", "point of interest", "search", "suggestions", "toolkit" })]
+    [ArcGISRuntime.Samples.Shared.Attributes.OfflineData("3424d442ebe54f3cbf34462382d3aebe")]
     public partial class SearchWithGeocode
     {
-        private LocatorSearchSource _defaultSearchSource;
-        private CustomSearchSource _customSource;
+        private LocatorTask _sanDiegoStreetsTask;
 
         public SearchWithGeocode()
         {
@@ -59,26 +59,32 @@ namespace ArcGISRuntime.WPF.Samples.SearchWithGeocode
 
             MyMapView.GraphicsOverlays.Add(searchResultsOverlay);
 
-            _defaultSearchSource = MySearchView.SearchViewModel.Sources[0] as LocatorSearchSource;
-            _defaultSearchSource.MaximumResults = 10;
-            _defaultSearchSource.MaximumSuggestions = 5;
+            // Edit default source.
+            LocatorSearchSource defaultSearchSource = MySearchView.SearchViewModel.Sources.First() as LocatorSearchSource;
+            defaultSearchSource.MaximumResults = 10;
 
-            _customSource = await CustomSearchSource.CreateDefaultSourceAsync();
-            _customSource.MaximumResults = 4;
-            _customSource.MaximumSuggestions = 3;
+            // Setting this value to 5, lower than the default value of 6, breaks the search extent functionality.
+            //defaultSearchSource.MaximumSuggestions = 5;
 
-            Viewpoint myViewPoint = MyMapView.GetCurrentViewpoint(ViewpointType.CenterAndScale);
-            var test = myViewPoint.TargetGeometry as MapPoint;
+            // Create custom implementation of default source.
+            CustomSearchSource customSource = await CustomSearchSource.CreateDefaultSourceAsync();
+            customSource.MaximumResults = 4;
+            customSource.MaximumSuggestions = 3;
+            customSource.DisplayName = "Custom World Geocoder";
 
-            if (MyMapView.GetCurrentViewpoint(ViewpointType.CenterAndScale)?.TargetGeometry is MapPoint targetMapPoint)
-            {
-                _defaultSearchSource.PreferredSearchLocation = GeometryEngine.Project(targetMapPoint, SpatialReferences.Wgs84) as MapPoint;
-                _customSource.PreferredSearchLocation = GeometryEngine.Project(targetMapPoint, SpatialReferences.Wgs84) as MapPoint;
-            }
+            // Get the path to the offline data.
+            string sanDiegoStreetsPath = DataManager.GetDataFolder("3424d442ebe54f3cbf34462382d3aebe", "SanDiego_StreetAddress.loc");
 
-            MySearchView.SearchViewModel.Sources.Add(_customSource);
+            // Load the geocoder.
+            _sanDiegoStreetsTask = await LocatorTask.CreateAsync(new Uri(sanDiegoStreetsPath));
+            LocatorSearchSource offlineDataSource = new LocatorSearchSource(_sanDiegoStreetsTask);
+            offlineDataSource.DisplayName = "Offline Data";
+            offlineDataSource.MaximumResults = 10;
+            offlineDataSource.MaximumSuggestions = 5;
 
-            MyMapView.ViewpointChanged += MyMapView_ViewpointChanged;
+            // Add the custom sources to the search component view model.
+            MySearchView.SearchViewModel.Sources.Add(offlineDataSource);
+            MySearchView.SearchViewModel.Sources.Add(customSource);
         }
 
         private void MyMapView_GeoViewTapped(object sender, GeoViewInputEventArgs e)
@@ -118,23 +124,43 @@ namespace ArcGISRuntime.WPF.Samples.SearchWithGeocode
                     // Show the callout on the map at the tapped location
                     MyMapView.ShowCalloutForGeoElement(pinGraphic, e.Position, calloutBody);
                 }
+                else
+                {
+                    // Reverse geocode to get addresses.
+                    ReverseGeocodeParameters parameters = new ReverseGeocodeParameters();
+                    parameters.ResultAttributeNames.Add("*");
+                    parameters.MaxResults = 1;
+                    IReadOnlyList<GeocodeResult> addresses = await _sanDiegoStreetsTask.ReverseGeocodeAsync(e.Location, parameters);
+
+                    // Skip if there are no results.
+                    if (!addresses.Any())
+                    {
+                        MessageBox.Show("No results found.", "No results");
+                        return;
+                    }
+
+                    // Get the first result.
+                    GeocodeResult address = addresses.First();
+
+                    // Use the address as the callout title.
+                    string calloutTitle = address.Attributes["StAddr"].ToString();
+                    string calloutDetail = address.Attributes["City"].ToString() + ", " + address.Attributes["RegionAbbr"] + " " + address.Attributes["Postal"];
+
+                    // Define the callout.
+                    CalloutDefinition calloutBody = new CalloutDefinition(calloutTitle, calloutDetail);
+
+                    // Show the callout on the map at the tapped location.
+                    MyMapView.ShowCalloutForGeoElement(pinGraphic, e.Position, calloutBody);
+                }
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.ToString(), "Error");
             }
         }
-
-        private void MyMapView_ViewpointChanged(object sender, EventArgs e)
-        {
-            if (MyMapView.GetCurrentViewpoint(ViewpointType.CenterAndScale)?.TargetGeometry is MapPoint targetMapPoint)
-            {
-                _defaultSearchSource.PreferredSearchLocation = GeometryEngine.Project(targetMapPoint, SpatialReferences.Wgs84) as MapPoint;
-                _customSource.PreferredSearchLocation = GeometryEngine.Project(targetMapPoint, SpatialReferences.Wgs84) as MapPoint;
-            }
-        }
     }
 
+    // This class is a clone of LocatorSearchSource used for local debugging.
     public class CustomSearchSource : ISearchSource
     {
         internal const string WorldGeocoderUriString = "https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
@@ -401,6 +427,7 @@ namespace ArcGISRuntime.WPF.Samples.SearchWithGeocode
         }
     }
 
+    // This class is a clone of WorldGeocoderSearchSource used for local debugging.
     internal class CustomWorldGeocoderSearchSource : CustomSearchSource
     {
         private const string AddressAttributeKey = "Place_addr";
