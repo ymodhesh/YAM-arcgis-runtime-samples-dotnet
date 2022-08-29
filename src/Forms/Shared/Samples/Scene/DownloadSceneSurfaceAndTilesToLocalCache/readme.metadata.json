@@ -1,0 +1,19 @@
+{
+    "category": "Scene",
+    "description": "Download scene surface and tiles to a local cache file stored on the device.",
+    "formal_name": "DownloadSceneSurfaceAndTilesToLocalCache",
+    "ignore": false,
+    "images": [
+        "DownloadSceneSurfaceAndTilesToLocalCache.jpg"
+    ],
+    "keywords": [
+    ],
+    "redirect_from": [
+        "/net/latest/wpf/sample-code/DownloadSceneSurfaceAndTilesToLocalCache.htm"
+    ],
+    "relevant_apis": [
+    ],
+    "snippets": [
+    ],
+    "title": "Download scene surface and tiles to local cache"
+}
