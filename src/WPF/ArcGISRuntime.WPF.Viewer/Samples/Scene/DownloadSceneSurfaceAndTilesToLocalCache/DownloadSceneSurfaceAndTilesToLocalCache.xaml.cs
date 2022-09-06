@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Diagnostics;
+using Esri.ArcGISRuntime.Portal;
 
 namespace ArcGISRuntime.WPF.Samples.DownloadSceneSurfaceAndTilesToLocalCache
 {
@@ -42,21 +43,31 @@ namespace ArcGISRuntime.WPF.Samples.DownloadSceneSurfaceAndTilesToLocalCache
         private GraphicsOverlay _pointsOverlay;
         private GraphicsOverlay _envelopePointsOverlay;
         private GraphicsOverlay _envelopeOverlay;
-        private Viewpoint _hawaiiViewpoint;
+        private Viewpoint _mammothViewpoint;
         private Envelope _hawaiiEnvelope;
         private bool _subscribedToMouseMoves;
 
         private const string ElevationTerrain3DArcGIS = "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer";
         private double _elevationExaggeration = 2.5;
 
-        private ArcGISTiledLayer _onlineTiledLayer;
-        private ArcGISTiledLayer _offlineTiledLayer;
+        private List<Layer> _onlineTiledLayers;
+        private List<Layer> _offlineTiledLayers;
 
         private List<ElevationSource> _onlineElevationSources;
         private List<ElevationSource> _offlineElevationSources;
 
+        private List<FeatureLayer> _onlineFeatureLayers;
+        private List<FeatureLayer> _offlineFeatureLayers;
+
         private List<string> _layers;
         private List<string> _elevationSources;
+
+        private Scene _onlineScene;
+        private Scene _offlineScene;
+
+        private Viewpoint _previousViewpoint;
+        private ExportTileCacheJob _tileJob;
+        private ExportVectorTilesJob _vectorTileJob;
 
         private bool _offlineElevationCached;
         private bool _useOfflineElevationSources;
@@ -117,8 +128,8 @@ namespace ArcGISRuntime.WPF.Samples.DownloadSceneSurfaceAndTilesToLocalCache
             MySceneView.ViewpointChanged += MySceneView_ViewpointChanged;
             MySceneView.GeoViewTapped += MySceneView_GeoViewTapped;
 
-            _pointSymbol = SimpleMarkerSceneSymbol.CreateSphere(System.Drawing.Color.Pink, 500, SceneSymbolAnchorPosition.Center);
-            _envelopePointSymbol = SimpleMarkerSceneSymbol.CreateSphere(System.Drawing.Color.Green, 1000, SceneSymbolAnchorPosition.Center);
+            _pointSymbol = SimpleMarkerSceneSymbol.CreateSphere(System.Drawing.Color.Pink, 50, SceneSymbolAnchorPosition.Center);
+            _envelopePointSymbol = SimpleMarkerSceneSymbol.CreateSphere(System.Drawing.Color.Green, 100, SceneSymbolAnchorPosition.Center);
 
             _envelopeSymbol = new SimpleFillSymbol()
             {
@@ -127,17 +138,17 @@ namespace ArcGISRuntime.WPF.Samples.DownloadSceneSurfaceAndTilesToLocalCache
 
             _pointsCursorOverlay = new GraphicsOverlay()
             {
-                SceneProperties = new LayerSceneProperties(SurfacePlacement.RelativeToScene)
+                SceneProperties = new LayerSceneProperties(SurfacePlacement.DrapedFlat)
             };
 
             _pointsOverlay = new GraphicsOverlay()
             {
-                SceneProperties = new LayerSceneProperties(SurfacePlacement.RelativeToScene)
+                SceneProperties = new LayerSceneProperties(SurfacePlacement.DrapedFlat)
             };
 
             _envelopePointsOverlay = new GraphicsOverlay()
             {
-                SceneProperties = new LayerSceneProperties(SurfacePlacement.RelativeToScene)
+                SceneProperties = new LayerSceneProperties(SurfacePlacement.DrapedFlat)
             };
 
             MySceneView.GraphicsOverlays.Add(_pointsOverlay);
@@ -159,16 +170,16 @@ namespace ArcGISRuntime.WPF.Samples.DownloadSceneSurfaceAndTilesToLocalCache
 
             _hawaiiEnvelope = new Envelope(-17394658.321500, 2368386.065900, -17384308.796700, 2356296.945600, SpatialReference.Create(3857));
 
-            MapPoint cameraLocation = new MapPoint(-156.1353, 20.8535, 10000, SpatialReferences.Wgs84);
+            MapPoint cameraLocation = new MapPoint(-118.9755, 37.6655, 8000, SpatialReferences.Wgs84);
 
             Camera sceneCamera = new Camera(locationPoint: cameraLocation,
-                                  heading: 214.4676,
-                                  pitch: 72,
+                                  heading: 235.92,
+                                  pitch: 70,
                                   roll: 0.0);
 
-            MapPoint sceneCenterPoint = new MapPoint(-156.2202679, 20.7550792, SpatialReferences.Wgs84);
+            MapPoint sceneCenterPoint = new MapPoint(-118.9955, 37.6485, SpatialReferences.Wgs84);
 
-            _hawaiiViewpoint = new Viewpoint(sceneCenterPoint, sceneCamera);
+            _mammothViewpoint = new Viewpoint(sceneCenterPoint, sceneCamera);
 
             await SetupNewScene();
         }
@@ -182,6 +193,19 @@ namespace ArcGISRuntime.WPF.Samples.DownloadSceneSurfaceAndTilesToLocalCache
             //TileCache tileCache = new TileCache(@"C:\Users\ciar8927\Documents\HawaiiTerrain3D.tpkx");
             //ArcGISTiledElevationSource elevationSource = new ArcGISTiledElevationSource(tileCache);
 
+            try
+            {
+                // Create an ArcGIS portal item.
+                var portal = await ArcGISPortal.CreateAsync();
+                var item = await PortalItem.CreateAsync(portal, "ac41b94d5a5546b7b273266bef3127fe");
+
+                _onlineScene = new Scene(item);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message, "Error");
+            }
+
             // Create a Surface with the elevation data.
             Surface elevationSurface = new Surface();
             elevationSurface.ElevationSources.Add(elevationSource);
@@ -190,10 +214,10 @@ namespace ArcGISRuntime.WPF.Samples.DownloadSceneSurfaceAndTilesToLocalCache
             elevationSurface.ElevationExaggeration = _elevationExaggeration;
 
             // Apply the surface to the scene.
-            MySceneView.Scene.BaseSurface = elevationSurface;
+            _onlineScene.BaseSurface = elevationSurface;
 
             // Set camera
-            MySceneView.Scene.InitialViewpoint = _hawaiiViewpoint;
+            _onlineScene.InitialViewpoint = _mammothViewpoint;
 
             // Init envelope to take offline
             InitEnvelope();
@@ -203,6 +227,8 @@ namespace ArcGISRuntime.WPF.Samples.DownloadSceneSurfaceAndTilesToLocalCache
 
             try
             {
+                MySceneView.Scene = _onlineScene;
+
                 await MySceneView.Scene.LoadAsync();
             }
             catch (Exception e)
@@ -212,11 +238,13 @@ namespace ArcGISRuntime.WPF.Samples.DownloadSceneSurfaceAndTilesToLocalCache
             }
 
             // Add elevation sources and tiled layer to cache
-            _onlineTiledLayer = MySceneView.Scene.AllLayers[0] as ArcGISTiledLayer;
+            _onlineTiledLayers = MySceneView.Scene.AllLayers.ToList();
             _onlineElevationSources = MySceneView.Scene.BaseSurface.ElevationSources.ToList();
             _offlineElevationSources = new List<ElevationSource>();
+            _offlineTiledLayers = new List<Layer>();
+            _offlineFeatureLayers = new List<FeatureLayer>();
 
-            PopulateLayerLists();
+            //PopulateLayerLists();
         }
 
         private async void PopulateLayerLists()
@@ -375,106 +403,241 @@ namespace ArcGISRuntime.WPF.Samples.DownloadSceneSurfaceAndTilesToLocalCache
             _offlineElevationCached = false;
             //ProgressBar.Visibility = Visibility.Visible;
 
+            _ = TakeOfflineTask();
+
+            //PopulateLayerLists();
+        }
+
+        private async Task TakeOfflineTask()
+        {
             var extent = new Envelope(XMin, YMin, XMax, YMax, SpatialReference.Create(3857));
             double minScale = 0;
             double maxScale = 30000;
 
-            _ = TakeImageryOffline(extent, minScale, maxScale);
-            _ = TakeElevationLayerOffline(extent, minScale, maxScale);
+            for (int i = 0; i < MySceneView.Scene.AllLayers.Count - 1; i++)
+            {
+                await TakeImageryOffline(extent, minScale, maxScale, i);
+            }
 
-            PopulateLayerLists();
+            await TakeElevationLayerOffline(extent, minScale, maxScale);
+
+            _offlineScene = new Scene();
+            _offlineScene.BaseSurface = GetElevationSurface(_offlineElevationSources);
+            _offlineScene.Basemap.BaseLayers.AddRange(_offlineTiledLayers);
+            _offlineScene.OperationalLayers.AddRange(_offlineFeatureLayers);
         }
 
-        private async Task TakeImageryOffline(Envelope extent, double minScale, double maxScale)
+        private async Task TakeImageryOffline(Envelope extent, double minScale, double maxScale, int layerIndex)
         {
             ExportTileCacheTask exportTilesTask;
+            ExportVectorTilesTask exportVectorTilesTask;
 
-            var layer = MySceneView.Scene.AllLayers[0] as ArcGISTiledLayer;
+            var layer = MySceneView.Scene.AllLayers[layerIndex];
 
-            try
+            Dispatcher.Invoke(() =>
             {
-                exportTilesTask = await ExportTileCacheTask.CreateAsync(layer.Source);
-            }
-            catch (Exception e)
+                TakeImageryOfflineProgressBar.Value = 0;
+                TakeImageryOfflineProgressBarLabel.Content = 0;
+            });
+
+            //foreach (var layer in MySceneView.Scene.AllLayers)
+            //{
+            //bool done = false;
+            if (layer is ArcGISTiledLayer tiledLayer)
             {
-                Debug.WriteLine("FAILED ExportTileCacheTask.CreateAsync: " + e);
-                //ShowProgress = false;
-                throw;
-            }
-
-            Debug.WriteLine(exportTilesTask.Uri);
-
-            string path = Path.Combine(Environment.ExpandEnvironmentVariables("%TEMP%"), Path.GetTempFileName() + ".tpkx");
-
-            ExportTileCacheParameters exportTileParams;
-            try
-            {
-                exportTileParams = await exportTilesTask.CreateDefaultExportTileCacheParametersAsync(extent, minScale, maxScale);
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("FAILED CreateDefaultExportTileCacheParametersAsync: " + e);
-                //ShowProgress = false;
-                throw;
-            }
-
-            TileCache res;
-            try
-            {
-                var job = exportTilesTask.ExportTileCache(exportTileParams, path);
-
-                job.Start();
-
-                job.ProgressChanged += (s, e) =>
+                try
                 {
-                    Dispatcher.Invoke(() =>
-                    {
-                        TakeImageryOfflineProgressBar.Value = job.Progress;
-                        TakeImageryOfflineProgressBarLabel.Content = job.Progress;
-                    });
+                    exportTilesTask = await ExportTileCacheTask.CreateAsync(tiledLayer.Source);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("FAILED ExportTileCacheTask.CreateAsync: " + e);
+                    //ShowProgress = false;
+                    throw;
+                }
 
-                    if (job.Progress >= 99.99)
-                    {
-                        //ShowProgress = false;
-                    }
-                    else if (job.Status == Esri.ArcGISRuntime.Tasks.JobStatus.Failed)
-                    {
-                        //ShowProgress = false;
-                    }
-                    else if (job.Status == Esri.ArcGISRuntime.Tasks.JobStatus.Succeeded)
-                    {
-                        //ShowProgress = false;
-                    }
-                };
+                Debug.WriteLine(exportTilesTask.Uri);
 
-                res = await job.GetResultAsync();
+                string path_tpkx = Path.Combine(Environment.ExpandEnvironmentVariables("%TEMP%"), Path.GetTempFileName() + ".tpkx");
+                string path_tpk = Path.Combine(Environment.ExpandEnvironmentVariables("%TEMP%"), Path.GetTempFileName() + ".tpk");
+
+                ExportTileCacheParameters exportTileParams;
+                try
+                {
+                    exportTileParams = await exportTilesTask.CreateDefaultExportTileCacheParametersAsync(extent, minScale, maxScale);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("FAILED CreateDefaultExportTileCacheParametersAsync: " + e);
+                    //ShowProgress = false;
+                    throw;
+                }
+
+                TileCache res;
+                try
+                {
+                    if (exportTilesTask.ServiceInfo.ExportTileCacheCompactV2Allowed)
+                    {
+                        _tileJob = exportTilesTask.ExportTileCache(exportTileParams, path_tpkx);
+                    }
+                    else
+                    {
+                        _tileJob = exportTilesTask.ExportTileCache(exportTileParams, path_tpk);
+                    }
+
+                    _tileJob.Start();
+
+                    _tileJob.ProgressChanged += Job_ProgressChanged;
+
+                    res = await _tileJob.GetResultAsync();
+
+                    _tileJob.ProgressChanged -= Job_ProgressChanged;
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("FAILED TO EXPORT TILE CACHE: " + e);
+                    //ShowProgress = false;
+                    throw;
+                }
+
+                Debug.WriteLine(res.Path);
+
+                try
+                {
+                    // Create a layer from tpkx.
+                    TileCache tileCache = new TileCache(res.Path);
+
+                    await tileCache.LoadAsync();
+                    var ext = tileCache.FullExtent;
+
+                    ArcGISTiledLayer localTiledLayer = new ArcGISTiledLayer(tileCache);
+                    localTiledLayer.Name = tiledLayer.Name;
+
+                    _offlineTiledLayers.Add(localTiledLayer);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("FAILED TO ADD LOCAL ELEVATION: " + e);
+                    throw;
+                }
             }
-            catch (Exception e)
+            else if (layer is ArcGISVectorTiledLayer vectorTiledLayer)
             {
-                Debug.WriteLine("FAILED TO EXPORT TILE CACHE: " + e);
+                try
+                {
+                    exportVectorTilesTask = await ExportVectorTilesTask.CreateAsync(vectorTiledLayer.Source);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("FAILED ExportTileCacheTask.CreateAsync: " + e);
+                    //ShowProgress = false;
+                    throw;
+                }
+
+                Debug.WriteLine(exportVectorTilesTask.Uri);
+
+                string path_vtpk = Path.Combine(Environment.ExpandEnvironmentVariables("%TEMP%"), Path.GetTempFileName() + ".vtpk");
+
+                ExportVectorTilesParameters exportVectorTileParams;
+                try
+                {
+                    exportVectorTileParams = await exportVectorTilesTask.CreateDefaultExportVectorTilesParametersAsync(extent, maxScale);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("FAILED CreateDefaultExportTileCacheParametersAsync: " + e);
+                    //ShowProgress = false;
+                    throw;
+                }
+
+                ExportVectorTilesResult res;
+                try
+                {
+                    _vectorTileJob = exportVectorTilesTask.ExportVectorTiles(exportVectorTileParams, path_vtpk);
+
+                    _vectorTileJob.Start();
+
+                    _vectorTileJob.ProgressChanged += Job_ProgressChanged;
+
+                    res = await _vectorTileJob.GetResultAsync();
+
+                    _vectorTileJob.ProgressChanged -= Job_ProgressChanged;
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("FAILED TO EXPORT TILE CACHE: " + e);
+                    //ShowProgress = false;
+                    throw;
+                }
+
+                Debug.WriteLine(res.VectorTileCache.Path);
+
+                try
+                {
+                    // Create a layer from vtpk.
+                    VectorTileCache vectorTileCache = new VectorTileCache(res.VectorTileCache.Path);
+
+                    await vectorTileCache.LoadAsync();
+
+                    ArcGISVectorTiledLayer localTiledLayer = new ArcGISVectorTiledLayer(vectorTileCache);
+                    localTiledLayer.Name = vectorTiledLayer.Name;
+
+                    _offlineTiledLayers.Add(localTiledLayer);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("FAILED TO ADD LOCAL ELEVATION: " + e);
+                    //ShowProgress = false;
+                    throw;
+                }
+            }
+            else if (layer is FeatureLayer featureLayer)
+            {
+                _offlineFeatureLayers.Add(featureLayer);
+            }
+        }
+
+        private void Job_ProgressChanged(object sender, EventArgs e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                TakeImageryOfflineProgressBar.Value = _tileJob.Progress;
+                TakeImageryOfflineProgressBarLabel.Content = _tileJob.Progress;
+            });
+
+            if (_tileJob.Progress >= 99.99)
+            {
                 //ShowProgress = false;
-                throw;
             }
-
-            Debug.WriteLine(res.Path);
-
-            try
+            else if (_tileJob.Status == Esri.ArcGISRuntime.Tasks.JobStatus.Failed)
             {
-                // Create a layer from tpkx.
-                TileCache tileCache = new TileCache(res.Path);
-                ArcGISTiledLayer localTiledLayer = new ArcGISTiledLayer(tileCache);
-                localTiledLayer.Name = layer.Name;
-
-                await tileCache.LoadAsync();
-                var ext = tileCache.FullExtent;
-
-                _offlineTiledLayer = localTiledLayer;
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("FAILED TO ADD LOCAL ELEVATION: " + e);
                 //ShowProgress = false;
-                throw;
+            }
+            else if (_tileJob.Status == Esri.ArcGISRuntime.Tasks.JobStatus.Succeeded)
+            {
+                //ShowProgress = false;
+            }
+        }
+
+        private void VectorJob_ProgressChanged(object sender, EventArgs e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                TakeImageryOfflineProgressBar.Value = _vectorTileJob.Progress;
+                TakeImageryOfflineProgressBarLabel.Content = _vectorTileJob.Progress;
+            });
+
+            if (_vectorTileJob.Progress >= 99.99)
+            {
+                //ShowProgress = false;
+            }
+            else if (_vectorTileJob.Status == Esri.ArcGISRuntime.Tasks.JobStatus.Failed)
+            {
+                //ShowProgress = false;
+            }
+            else if (_vectorTileJob.Status == Esri.ArcGISRuntime.Tasks.JobStatus.Succeeded)
+            {
+                //ShowProgress = false;
             }
         }
 
@@ -555,6 +718,11 @@ namespace ArcGISRuntime.WPF.Samples.DownloadSceneSurfaceAndTilesToLocalCache
                         }
                     };
 
+                    job.StatusChanged += (s, e) =>
+                    {
+                        Debug.WriteLine(job.Status);
+                    };
+
                     res = await job.GetResultAsync();
                 }
                 catch (Exception e)
@@ -595,25 +763,17 @@ namespace ArcGISRuntime.WPF.Samples.DownloadSceneSurfaceAndTilesToLocalCache
 
         public void SwitchToOnlineSources()
         {
-            UpdateElevationSources(_onlineElevationSources);
-            PopulateLayerLists();
-            //Scene.Basemap = new Basemap(BasemapStyle.ArcGISImageryStandard); // Using OnlineTiledLayer does not work
-            MySceneView.Scene.Basemap.BaseLayers.Clear();
-            MySceneView.Scene.Basemap.BaseLayers.Add(_onlineTiledLayer);
-            PopulateLayerLists();
+            MySceneView.Scene = _onlineScene;
+            MySceneView.SetViewpoint(_mammothViewpoint);
         }
 
         public void SwitchToOfflineSources()
         {
-            UpdateElevationSources(_offlineElevationSources);
-            PopulateLayerLists();
-            //Scene.Basemap = new Basemap(OfflineTiledLayer);
-            MySceneView.Scene.Basemap.BaseLayers.Clear();
-            MySceneView.Scene.Basemap.BaseLayers.Add(_offlineTiledLayer);
-            PopulateLayerLists();
+            MySceneView.Scene = _offlineScene;
+            MySceneView.SetViewpoint(_mammothViewpoint);
         }
 
-        private void UpdateElevationSources(List<ElevationSource> elevationSources)
+        private Surface GetElevationSurface(List<ElevationSource> elevationSources)
         {
             // Create a Surface with the elevation data.
             Surface elevationSurface = new Surface();
@@ -626,7 +786,8 @@ namespace ArcGISRuntime.WPF.Samples.DownloadSceneSurfaceAndTilesToLocalCache
 
             // Add an exaggeration factor to increase the 3D effect of the elevation.
             elevationSurface.ElevationExaggeration = _elevationExaggeration;
-            MySceneView.Scene.BaseSurface = elevationSurface;
+
+            return elevationSurface;
         }
 
         private void SwitchSourcesButton_Click(object sender, RoutedEventArgs e)
